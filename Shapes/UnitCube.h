@@ -14,14 +14,16 @@ class UnitCube {
 private:
     const float SIDE_LENGTH = 1.0f;
     short C_ADJUST = 10;
+    int stcks = 1;
+    int slces = 1;
 
 protected:
-    GLuint vertex_buffer, color_buffer, index_buffer;
-    std::vector <glm::vec3> all_points, all_colors;
+    GLuint vertex_buffer, color_buffer, index_buffer, normal_buffer;
+    std::vector <glm::vec3> all_points, all_colors, all_normals;
     vector<GLushort> all_index;
 public:
     ~UnitCube();
-    void build(glm::vec3 color, short variation);
+    void build(int stacks, int slices, glm::vec3 color, short variation);
     void render(bool) const;
 
 };

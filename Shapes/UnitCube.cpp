@@ -11,20 +11,48 @@ UnitCube::~UnitCube() {
         glDeleteBuffers(1, &color_buffer);
     if (glIsBuffer(index_buffer))
         glDeleteBuffers(1, &index_buffer);
+    if (glIsBuffer(normal_buffer))
+        glDeleteBuffers(1, &normal_buffer);
 }
 
-void UnitCube::build(glm::vec3 color, short variation) {
+void UnitCube::build(int stacks, int slices, glm::vec3 color, short variation) {
 
     glGenBuffers(1, &vertex_buffer);
     glGenBuffers(1, &index_buffer);
     glGenBuffers(1, &color_buffer);
+    glGenBuffers(1, &normal_buffer);
 
     //Set up light and dark color variations
     srand (time(NULL));
 
+    stcks = stacks;
+    slces = slices;
 
     float x, y, z;
     x = y = z = SIDE_LENGTH / 2;
+
+
+
+    /*
+    y = -y;
+    for(int i = 0; i < stacks+1;i++){
+        for(int j = 0; j < slices+1; j++){
+            all_points.push_back(vec3 {x, y+1/(slices+1), z - 1/(stacks+1)});
+            all_colors.push_back(color);
+            cout << i << endl;
+            cout << j << endl;
+        }
+    }
+
+    for(int i = 0; i < stacks;i++){
+        for(int j = 0; j < slices+1; j++){
+            all_index.push_back(j+i*(slices+1));
+            all_index.push_back(j+(i+1)*(slices+1));
+        }
+    }
+
+*/
+
 
     //bottom
     all_points.push_back(vec3 {-x, -y, -z});
@@ -64,6 +92,20 @@ void UnitCube::build(glm::vec3 color, short variation) {
     all_index.push_back(7);
     all_index.push_back(3);
 
+
+
+    //Normals
+    all_normals.push_back(glm::normalize(vec3{-1,-1,-1}));
+    all_normals.push_back(glm::normalize(vec3{1,-1,-1}));
+    all_normals.push_back(glm::normalize(vec3{1,1,-1}));
+    all_normals.push_back(glm::normalize(vec3{-1,1,-1}));
+    all_normals.push_back(glm::normalize(vec3{-1,-1,1}));
+    all_normals.push_back(glm::normalize(vec3{1,-1,1}));
+    all_normals.push_back(glm::normalize(vec3{1,1,1}));
+    all_normals.push_back(glm::normalize(vec3{-1,1,1}));
+
+
+
     glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
     glBufferData(GL_ARRAY_BUFFER, all_points.size() * sizeof(float) * 3, NULL, GL_DYNAMIC_DRAW);
     float *vertex_ptr = (float *) glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
@@ -99,16 +141,38 @@ void UnitCube::build(glm::vec3 color, short variation) {
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffer);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, all_index.size() * sizeof(GLushort), all_index.data(), GL_DYNAMIC_DRAW);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+    //normals
+    glBindBuffer(GL_ARRAY_BUFFER, normal_buffer);
+    glBufferData(GL_ARRAY_BUFFER, all_normals.size() * sizeof(float) * 3, NULL, GL_DYNAMIC_DRAW);
+    float *normal_ptr = (float *) glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
+
+    /* Initialize the vertices */
+    float *nptr = normal_ptr;
+    for (auto v : all_normals) {
+        nptr[0] = v.x;
+        nptr[1] = v.y;
+        nptr[2] = v.z;
+        nptr += 3;
+    }
+    glUnmapBuffer(GL_ARRAY_BUFFER);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
 void UnitCube::render(bool outline) const {
     /* bind vertex buffer */
-
+    glPushAttrib(GL_ENABLE_BIT);
     glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
     glVertexPointer(3, GL_FLOAT, 0, 0);
+    glDisableClientState(GL_COLOR_ARRAY);
     glEnableClientState(GL_COLOR_ARRAY);
     glBindBuffer(GL_ARRAY_BUFFER, color_buffer);
+
     glColorPointer(3, GL_FLOAT, 0, 0);
+
+    glEnableClientState(GL_NORMAL_ARRAY);
+    glBindBuffer(GL_ARRAY_BUFFER, normal_buffer);
+    glNormalPointer(GL_FLOAT, 0, 0);
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffer);
 
@@ -118,6 +182,13 @@ void UnitCube::render(bool outline) const {
     else
         glPolygonMode (GL_FRONT, GL_FILL);
     glPolygonMode (GL_BACK, GL_LINE);
+
+
+
+   // glDrawElements(GL_QUAD_STRIP, (stcks+1)*(slces+1), GL_UNSIGNED_SHORT, (void *) (sizeof(GLushort) * (0)));
+
+
+
     glFrontFace(GL_CW);
     glDrawRangeElements(GL_QUADS, 0,0, 4, GL_UNSIGNED_SHORT, 0);
 
@@ -132,7 +203,9 @@ void UnitCube::render(bool outline) const {
     /* unbind the buffers */
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    glPopAttrib();
 
-    glEnableClientState(GL_COLOR_ARRAY);
+   // glEnableClientState(GL_COLOR_ARRAY);
+
 
 }

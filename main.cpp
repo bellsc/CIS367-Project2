@@ -21,6 +21,9 @@
 
 
 #include "WheelTemp.h"
+#include "Helicopter/Propeller.h"
+#include "Helicopter/Helicopter.h"
+
 
 
 using namespace std;
@@ -31,6 +34,8 @@ WheelTemp *wheel;
 
 WheelTemp *spot;
 WheelTemp sphere;
+Propeller propeller;
+Helicopter heli;
 
 
 glm::mat4 wheel_cf;
@@ -87,6 +92,9 @@ void updateCoordFrames()
         delta = (current - last_timestamp);
         wheel_angle = WHEEL_SPEED * delta;
         wheel_cf *= glm::rotate(glm::radians(wheel_angle), glm::vec3{0.0f, 0.0f, 1.0f});
+
+        //Test
+        heli.mainProp_cf *= glm::rotate(glm::radians(wheel_angle * 2), glm::vec3{0.0f, 0.0f, 1.0f});
 
         /* use the pendulum equation to calculate its angle */
         swing_time += delta * 3;
@@ -167,17 +175,17 @@ void displayCallback (GLFWwindow *win)
     glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
     glColor3ub (29, 100, 56);
 
-    glBegin (GL_QUADS);
-    const int GROUND_SIZE = 40;
-    glNormal3f (0.0f, 0.0f, 1.0f); /* normal vector for the ground */
-    glVertex2i (GROUND_SIZE, GROUND_SIZE);
-    glNormal3f (0.0f, 0.0f, 1.0f); /* normal vector for the ground */
-    glVertex2i (-GROUND_SIZE, GROUND_SIZE);
-    glNormal3f (0.0f, 0.0f, 1.0f); /* normal vector for the ground */
-    glVertex2i (-GROUND_SIZE, -GROUND_SIZE);
-    glNormal3f (0.0f, 0.0f, 1.0f); /* normal vector for the ground */
-    glVertex2i (GROUND_SIZE, -GROUND_SIZE);
-    glEnd();
+//    glBegin (GL_QUADS);
+//    const int GROUND_SIZE = 40;
+//    glNormal3f (0.0f, 0.0f, 1.0f); /* normal vector for the ground */
+//    glVertex2i (GROUND_SIZE, GROUND_SIZE);
+//    glNormal3f (0.0f, 0.0f, 1.0f); /* normal vector for the ground */
+//    glVertex2i (-GROUND_SIZE, GROUND_SIZE);
+//    glNormal3f (0.0f, 0.0f, 1.0f); /* normal vector for the ground */
+//    glVertex2i (-GROUND_SIZE, -GROUND_SIZE);
+//    glNormal3f (0.0f, 0.0f, 1.0f); /* normal vector for the ground */
+//    glVertex2i (GROUND_SIZE, -GROUND_SIZE);
+//    glEnd();
     glDisable (GL_COLOR_MATERIAL);
 
 
@@ -210,6 +218,18 @@ void displayCallback (GLFWwindow *win)
     spot->render();
     glPopMatrix();
 
+    //TEST
+    glPushMatrix();
+    glTranslatef(0,0,5);
+    glMultMatrixf(glm::value_ptr(heli.mainProp_cf));
+  //  propeller.render(false);
+    glPopMatrix();
+
+    glPushMatrix();
+    glTranslatef(0,0,10);
+
+    heli.render(false);
+    glPopMatrix();
 
     /* The following nesting of push-pop pairs create an easy
      * way to render different object w.r.t other coordinate
@@ -231,7 +251,8 @@ void displayCallback (GLFWwindow *win)
                 glTranslatef(0,0,10);
                 glMultMatrixf(glm::value_ptr(wheel_cf));
 
-                wheel->render();
+
+               // wheel->render();
             }
           //  glPopMatrix();
 
@@ -245,6 +266,8 @@ void displayCallback (GLFWwindow *win)
 
 void myModelInit ()
 {
+    propeller.build(4, 8, glm::vec3{.5,0,0});
+    heli.build(4, 2, glm::vec3{0,.5,.2});
 
    // sphere.build(15, 20);
     spot = new WheelTemp();
