@@ -25,6 +25,8 @@ void UnitCube::build(int stacks, int slices, glm::vec3 color, short variation) {
     //Set up light and dark color variations
     srand (time(NULL));
 
+
+    //Make function to create 1 face.  Put 6 faces together.
     stcks = stacks;
     slces = slices;
 
@@ -32,8 +34,8 @@ void UnitCube::build(int stacks, int slices, glm::vec3 color, short variation) {
     x = y = z = SIDE_LENGTH / 2;
 
 
+/*
 
-    /*
     y = -y;
     for(int i = 0; i < stacks+1;i++){
         for(int j = 0; j < slices+1; j++){
@@ -161,10 +163,10 @@ void UnitCube::build(int stacks, int slices, glm::vec3 color, short variation) {
 
 void UnitCube::render(bool outline) const {
     /* bind vertex buffer */
-    glPushAttrib(GL_ENABLE_BIT);
+    glPushAttrib(GL_ENABLE_BIT | GL_POLYGON_BIT);
     glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
     glVertexPointer(3, GL_FLOAT, 0, 0);
-    glDisableClientState(GL_COLOR_ARRAY);
+    //glDisableClientState(GL_COLOR_ARRAY);
     glEnableClientState(GL_COLOR_ARRAY);
     glBindBuffer(GL_ARRAY_BUFFER, color_buffer);
 
