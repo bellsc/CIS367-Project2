@@ -14,8 +14,10 @@ class UnitCube {
 private:
     const float SIDE_LENGTH = 1.0f;
     short C_ADJUST = 10;
-    int stcks = 1;
-    int slces = 1;
+    float stcks = 1;
+    float slces = 1;
+    glm::mat4 face_cf, top_cf, bot_cf;
+    void renderFace(bool) const;
 
 protected:
     GLuint vertex_buffer, color_buffer, index_buffer, normal_buffer;
@@ -25,5 +27,6 @@ public:
     ~UnitCube();
     void build(int stacks, int slices, glm::vec3 color, short variation);
     void render(bool) const;
+
 
 };

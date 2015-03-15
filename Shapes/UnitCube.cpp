@@ -1,6 +1,9 @@
 #define _USE_MATH_DEFINES
 #include <cmath>
 #include <time.h>
+#include <glm/gtc/type_ptr.hpp>
+#include <glm/gtx/transform.hpp>
+#include <glm/gtc/matrix_access.hpp>
 #include "UnitCube.h"
 
 using glm::vec3;
@@ -34,28 +37,79 @@ void UnitCube::build(int stacks, int slices, glm::vec3 color, short variation) {
     x = y = z = SIDE_LENGTH / 2;
 
 
-/*
-
     y = -y;
-    for(int i = 0; i < stacks+1;i++){
-        for(int j = 0; j < slices+1; j++){
-            all_points.push_back(vec3 {x, y+1/(slices+1), z - 1/(stacks+1)});
+    cout << "stacks: " << stcks << ", slices: " << slces << endl;
+    for(float i = 0; i < stcks+1;i++){
+
+        for(float j = 0; j < slces+1; j++){
+
+            vec3 vertex{x, y, z};
+            all_points.push_back(vertex);
             all_colors.push_back(color);
-            cout << i << endl;
-            cout << j << endl;
+            y += 1/(slces);
+            all_normals.push_back(vec3{1, 0, 0});
+        }
+        y = -SIDE_LENGTH/2;
+        z -=  1/(stcks) ;
+    }
+
+
+    for(int i = 0; i < stcks;i++){
+        for(int j = 0; j < slces+1; j++){
+            int temp1 = j+i*(slces+1);
+            int temp2 = j+(i+1)*(slces+1);
+            all_index.push_back(temp1);
+            all_index.push_back(temp2);
+
         }
     }
 
-    for(int i = 0; i < stacks;i++){
-        for(int j = 0; j < slices+1; j++){
-            all_index.push_back(j+i*(slices+1));
-            all_index.push_back(j+(i+1)*(slices+1));
-        }
+cout << all_normals.size() << endl;
+    //Normals
+    for(int i = 1; i < slces; i++){
+        all_normals[i] = glm::normalize(vec3{1, 0, 1});
+        all_normals[i+(stcks*(slces+1))]= glm::normalize(vec3{1, 0, -1});
+        cout << i << endl;
+        cout << i+(stcks*(slces+1)) << endl;
+        cout << "" << endl;
+    }
+    for(int i = 1; i < stcks; i++){
+        all_normals[i*(slces+1)] = glm::normalize(vec3{1, -1, 0});
+        all_normals[i*(slces+1)+slces] = glm::normalize(vec3{1, 1, 0});
+        cout << i*(slces+1) << endl;
+        cout << i*(slces+1)+slces << endl;
+        cout << "" << endl;
     }
 
-*/
+    //Corners
+    all_normals[0] = glm::normalize(vec3{1, -1, 1});
+    all_normals[slces] = glm::normalize(vec3{1, 1, 1});
+    all_normals[stcks*(slces+1)] = glm::normalize(vec3{1, -1, -1});
+    all_normals[(stcks+1)*(slces+1)-1] = glm::normalize(vec3{1, 1, -1});
 
 
+
+
+
+/*
+    for(int i = 0; i < slices+1;i++){
+        for(int j = 0; j < stacks+1; j++){
+            int temp1 = i+j*(slices+1);
+            //int temp2 = i+(j+1)*(slices+1);
+            all_index.push_back(temp1);
+            //all_index.push_back(temp2);
+
+            cout << temp1 << endl;
+           // cout << temp2 << endl;
+//            all_index.push_back(j+i*(slices));
+//            all_index.push_back(j+(i+1)*(slices));
+        }
+    }
+    */
+
+
+
+/*
     //bottom
     all_points.push_back(vec3 {-x, -y, -z});
     all_points.push_back(vec3 {x, -y, -z});
@@ -106,7 +160,7 @@ void UnitCube::build(int stacks, int slices, glm::vec3 color, short variation) {
     all_normals.push_back(glm::normalize(vec3{1,1,1}));
     all_normals.push_back(glm::normalize(vec3{-1,1,1}));
 
-
+/**/
 
     glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
     glBufferData(GL_ARRAY_BUFFER, all_points.size() * sizeof(float) * 3, NULL, GL_DYNAMIC_DRAW);
@@ -159,9 +213,36 @@ void UnitCube::build(int stacks, int slices, glm::vec3 color, short variation) {
     }
     glUnmapBuffer(GL_ARRAY_BUFFER);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+    face_cf *= glm::rotate (glm::radians(90.0f), glm::vec3{0,0,1});
+    bot_cf *= glm::rotate (glm::radians(90.0f), glm::vec3{0,1,0});
+    top_cf *= glm::rotate (glm::radians(-180.0f), glm::vec3{0,1,0});
 }
 
 void UnitCube::render(bool outline) const {
+
+
+    glPushMatrix();
+
+    renderFace(outline);
+    glMultMatrixf(glm::value_ptr(face_cf));
+    renderFace(outline);
+    glMultMatrixf(glm::value_ptr(face_cf));
+    renderFace(outline);
+    glMultMatrixf(glm::value_ptr(face_cf));
+    renderFace(outline);
+
+    glMultMatrixf(glm::value_ptr(bot_cf));
+    renderFace(outline);
+
+    glMultMatrixf(glm::value_ptr(top_cf));
+    renderFace(outline);
+
+    glPopMatrix();
+
+}
+
+void UnitCube::renderFace(bool outline) const{
     /* bind vertex buffer */
     glPushAttrib(GL_ENABLE_BIT | GL_POLYGON_BIT);
     glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
@@ -186,11 +267,14 @@ void UnitCube::render(bool outline) const {
     glPolygonMode (GL_BACK, GL_LINE);
 
 
+    int n = 0;
+for(int i = 0; i < stcks; i++) {
+    glDrawElements(GL_QUAD_STRIP, 2 * (slces+1), GL_UNSIGNED_SHORT,(void *) (sizeof(GLushort) * (n)));
+    n += 2 * (slces+1);
+}
 
-   // glDrawElements(GL_QUAD_STRIP, (stcks+1)*(slces+1), GL_UNSIGNED_SHORT, (void *) (sizeof(GLushort) * (0)));
 
-
-
+/*
     glFrontFace(GL_CW);
     glDrawRangeElements(GL_QUADS, 0,0, 4, GL_UNSIGNED_SHORT, 0);
 
@@ -206,8 +290,4 @@ void UnitCube::render(bool outline) const {
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
     glPopAttrib();
-
-   // glEnableClientState(GL_COLOR_ARRAY);
-
-
 }

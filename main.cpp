@@ -35,6 +35,7 @@ void displayCallback(GLFWwindow*);
 UnitCube ground;
 Helicopter heli;
 GLUquadric *sun;
+UnitCube testcube, test2;
 
 
 glm::mat4 heli_cf;
@@ -48,8 +49,6 @@ int propSpeedMode = 0;
 const float PROP_SPEEDS[] = {0, 600, 1000, 1400};
 float currentHeight = 0;
 
-
-const float INIT_SWING_ANGLE = 35.0f; /* degrees */
 const float GRAVITY = 9.8;   /* m/sec^2 */
 bool is_anim_running = true;
 
@@ -87,22 +86,72 @@ void updateCoordFrames()
     static float prop_angle = 0;
     //static int deg = 0;
 
-
     float delta, current;
 
     current = glfwGetTime();
     if (is_anim_running) {
         delta = (current - last_timestamp);
         prop_angle = PROP_SPEEDS[propSpeedMode] * delta;
+//cout << heli_cf << "\n" << endl;
+//propSpeedMode = 1;
+        glm::mat3 heli_cf3(heli_cf);
+        //glm::vec3 modelOrigin = glm::vec3{0,0,0} * heli_cf3;
+        glm::vec4 modelOrigin = heli_cf * glm::vec4{0, 0, 0, 1};
+   //     cout << modelOrigin << endl;
+        if (modelOrigin.z >= 0) {
 
+            glm::vec3 gravVec = {0, 0, -GRAVITY};
+            float liftForce = 9.8;
+            float multiplier = .298;
+            if (modelOrigin.z == 0) {
+                liftForce = PROP_SPEEDS[propSpeedMode] * multiplier;
+            }
+            else {
+                liftForce = PROP_SPEEDS[propSpeedMode] * multiplier / modelOrigin.z;
+            }
 
-        heli_cf = glm::translate(glm::vec3{-.5 * heli.currXangle * delta, -.5 * heli.currYangle * delta, 0}) * heli_cf;
+//            cout << liftForce << endl;
+            //glm::vec3 modelLiftPoint = {0, 0, liftForce};
+            //glm::vec4 modelLiftPoint = {0, 0, liftForce, 1};
+
+            //glm::mat3 heli_cf3(heli_cf);
+            //glm::vec3 modelOrigin = glm::vec3{0,0,0} * heli_cf3;
+            // glm::vec3 modelLiftVec = modelLiftPoint - modelOrigin;
+            //glm::vec4 modelLiftVec = modelLiftPoint - modelOrigin;
+            glm::vec4 modelLiftVec = {0, 0, liftForce, 0};
+
+ //           cout << " model " << modelLiftVec << endl;
+//            cout << heli_cf3 << endl;
+            //glm::vec3 worldLiftVec4 = modelLiftVec * heli_cf3;
+            glm::vec3 worldLiftVec = glm::vec3(heli_cf * modelLiftVec);
+//            cout << " world no grav " << worldLiftVec << endl;
+            worldLiftVec += gravVec;
+
+//            cout << "" << endl;
+         //   cout << " world " << worldLiftVec << endl;
+
+            //currentHeight += worldLiftVec4.z * delta;
+            //  cout << " change in current height " << worldLiftVec4.z * delta << endl;
+
+            if (modelOrigin.z > 0 || (modelOrigin.z == 0 && worldLiftVec.z > 0))
+                heli_cf = glm::translate(worldLiftVec * delta) * heli_cf;
+                //heli_cf *= glm::translate(worldLiftVec * delta);
+            // heli_cf *= glm::translate(worldLiftVec4 * glm::vec3{-1,-1,1}* delta);
+
+        }
+        if (modelOrigin.z < 0) {
+           // cout << "underground!" << endl;
+            heli_cf *= glm::translate(glm::vec3{0, 0, -modelOrigin.z});
+         }
+
+        // = glm::translate(glm::vec3{-.5 * heli.currXangle * delta, -.5 * heli.currYangle * delta, 0}) * heli_cf;
 
         //For helicopter movement, add together the z axis vector of the helicopter model
         //with the gravity vector (down in the world of course.  Natural movement without
         //"height modes" or differentiating x and y translation.
 
         //Move up if propeller speed can push up.
+        /*
         if (currentHeight <= PROP_SPEEDS[propSpeedMode] / 25) {
             float liftSpeed = PROP_SPEEDS[propSpeedMode] - currentHeight;
             currentHeight += liftSpeed/100 * delta;
@@ -120,7 +169,7 @@ void updateCoordFrames()
                 currentHeight = 0;
             }
             */
-        }
+
 
 
 
@@ -184,7 +233,7 @@ void displayCallback (GLFWwindow *win)
     glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     glLoadMatrixf(glm::value_ptr(camera_cf));
-/*
+
     glBegin (GL_LINES);
     glColor3ub (255, 0, 0);
     glVertex3i (0, 0, 0);
@@ -196,7 +245,7 @@ void displayCallback (GLFWwindow *win)
     glVertex3i (0, 0, 0);
     glVertex3i (0, 0, 2);
     glEnd();
-*/
+
 
     /* Specify the reflectance property of the ground using glColor
        (instead of glMaterial....)
@@ -208,17 +257,21 @@ void displayCallback (GLFWwindow *win)
     glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
     glColor3ub (29, 100, 56);
 
-    glBegin (GL_QUADS);
-    const int GROUND_SIZE = 40;
-    glNormal3f (0.0f, 0.0f, 1.0f); /* normal vector for the ground */
-    glVertex2i (GROUND_SIZE, GROUND_SIZE);
-    glNormal3f (0.0f, 0.0f, 1.0f); /* normal vector for the ground */
-    glVertex2i (-GROUND_SIZE, GROUND_SIZE);
-    glNormal3f (0.0f, 0.0f, 1.0f); /* normal vector for the ground */
-    glVertex2i (-GROUND_SIZE, -GROUND_SIZE);
-    glNormal3f (0.0f, 0.0f, 1.0f); /* normal vector for the ground */
-    glVertex2i (GROUND_SIZE, -GROUND_SIZE);
-    glEnd();
+//glPushMatrix();
+//    glBegin (GL_QUADS);
+//    glTranslatef(0,0,-1);
+//    const int GROUND_SIZE = 200;
+//    glNormal3f (0.0f, 0.0f, 1.0f); /* normal vector for the ground */
+//    glVertex2i (GROUND_SIZE, GROUND_SIZE);
+//    glNormal3f (0.0f, 0.0f, 1.0f); /* normal vector for the ground */
+//    glVertex2i (-GROUND_SIZE, GROUND_SIZE);
+//    glNormal3f (0.0f, 0.0f, 1.0f); /* normal vector for the ground */
+//    glVertex2i (-GROUND_SIZE, -GROUND_SIZE);
+//    glNormal3f (0.0f, 0.0f, 1.0f); /* normal vector for the ground */
+//    glVertex2i (GROUND_SIZE, -GROUND_SIZE);
+//    glEnd();
+//    glPopMatrix();
+
    glDisable (GL_COLOR_MATERIAL);
 
 
@@ -248,8 +301,6 @@ void displayCallback (GLFWwindow *win)
 
 
 
-
-
     /* render the spot light using its coordinate frame */
     glPushMatrix();
     glMultMatrixf(glm::value_ptr(light1_cf));
@@ -267,9 +318,20 @@ void displayCallback (GLFWwindow *win)
     glMaterialfv(GL_FRONT, GL_SPECULAR, PEWTER_SPECULAR);
     glMaterialf(GL_FRONT, GL_SHININESS, 50);
 
+
+    glPushMatrix();
+    glTranslatef(0, 0, 15);
+    testcube.render(false);
+    glPopMatrix();
+
+    glPushMatrix();
+    glTranslatef(3, 0, 15);
+    test2.render(false);
+    glPopMatrix();
+
     glTranslatef(0,0,-2.3);
     glScalef(100, 100, .5);
-    //ground.render(false);
+    ground.render(false);
     glPopMatrix();
 
     glPushMatrix();
@@ -305,6 +367,9 @@ void myModelInit ()
 
 
     sun = gluNewQuadric();
+
+    testcube.build(3,9,glm::vec3{1, 0, 0}, 1);
+    test2.build(1,1,glm::vec3{1, 0, 0}, 1);
 
     active = &camera_cf;
 
@@ -355,7 +420,8 @@ void keyCallback (GLFWwindow *win, int key, int scan_code, int action, int mods)
 
                     heli.currXangle -= 3;
                     heli_cf *= glm::rotate(glm::radians(3.0f), glm::vec3{0.0f, 1.0f, 0.0f});
-                    cout << heli.currXangle << endl;
+                   // cout << heli.currXangle << endl;
+                   // cout << heli_cf << endl;
                 }
                 break;
             case GLFW_KEY_DOWN: /* tilt */

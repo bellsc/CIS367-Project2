@@ -45,10 +45,17 @@ void Helicopter::render(bool outline) const {
     static float RUBY_DIFFUSE[] = {0.614240, 0.041360, 0.041360, 1.0};
     static float RUBY_SPECULAR[] = {0.727811, 0.626959, 0.626959, 1.0};
 
-
-
-
-
+    glBegin (GL_LINES);
+    glColor3ub (255, 0, 0);
+    glVertex3i (0, 0, 0);
+    glVertex3i (5, 0, 0);
+    glColor3ub (0, 255, 0);
+    glVertex3i (0, 0, 0);
+    glVertex3i (0, 5, 0);
+    glColor3ub (0, 0, 255);
+    glVertex3i (0, 0, 0);
+    glVertex3i (0, 0, 5);
+    glEnd();
 
     glMaterialfv(GL_FRONT, GL_AMBIENT, RUBY_AMBIENT);
     glMaterialfv(GL_FRONT, GL_DIFFUSE, RUBY_DIFFUSE);
@@ -158,3 +165,4 @@ void Helicopter::render(bool outline) const {
     glPopMatrix();
 
 }
+
