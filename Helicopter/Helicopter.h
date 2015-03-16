@@ -19,27 +19,11 @@ private:
     UnitCube propBase, skid;
     UnitCube tailPiece ;
     Propeller mainProp, tailProp;
-
     GLUquadric *body, *tail, *skidConnect, *spotlight;
 
-
-
-
 public:
-    ~Helicopter();
     glm::mat4 spotlight_cf;
-//    const int MAX_X_ANGLE = 45;
-//    const int MAX_Y_ANGLE = 45;
-//    const int MIN_X_ANGLE = -45;
-//    const int MIN_Y_ANGLE = -45;
-    const int MAX_X_ANGLE = 545;
-    const int MAX_Y_ANGLE = 545;
-    const int MIN_X_ANGLE = -545;
-    const int MIN_Y_ANGLE = -545;
-    int currXangle = 0;
-    int currYangle = 0;
     glm::mat4 mainProp_cf, tailProp_cf;
     void build(int mainBlades, int tailBlades, glm::vec3 color);
     void render(bool) const;
-
 };

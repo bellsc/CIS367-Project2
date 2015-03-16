@@ -24,7 +24,6 @@ private:
 
 
 public:
-    ~Propeller();
     void build(int numBlades, float bladeLength, glm::vec3 color);
     void render(bool) const;
 

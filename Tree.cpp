@@ -2,17 +2,11 @@
 #include <cmath>
 #include <glm/gtx/transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
-#include <time.h>
 #include "Tree.h"
 
 using glm::vec3;
 
-Tree::~Tree() {
-
-}
-
 void Tree::build(float trunkHeight, int numLeafRows) {
-
 
     height = trunkHeight;
     trunkRad = .07 * height;
@@ -35,9 +29,9 @@ void Tree::render(bool outline) const {
     glMaterialfv(GL_FRONT, GL_SPECULAR, TREE_SPECULAR);
     glMaterialf(GL_FRONT, GL_SHININESS, 120);
 
-
     glEnable(GL_COLOR_MATERIAL);
     glColor3ub (70, 35, 0);
+
     //TrunkBase
     glPushMatrix();
     gluCylinder(trunkBase, 1.4*trunkRad, trunkRad, .4*height, 10, 10);
@@ -50,7 +44,6 @@ void Tree::render(bool outline) const {
     glPopMatrix();
 
 
-
     //Leaf bunches
     //Top
     glColor3ub (0, 85, 0);
@@ -59,24 +52,20 @@ void Tree::render(bool outline) const {
     gluSphere(leafBunch, trunkRad*2.5, 12, 12);
     glPopMatrix();
 
+    //Lower layers
     glPushMatrix();
-
     glTranslatef(0, 0, height);
     float angle = 0;
     for(float i = 1; i < leafRows; i++) {
-
         int n = (i+1)*(1+1);
         for(int j = 0; j < n; j++){
             glPushMatrix();
-            //angle += 360/(4*i);
             glRotatef(j*360/n, 0, 0, 1);
             glTranslatef(i * trunkRad * 1.5, 0, 0);
             gluSphere(leafBunch, trunkRad*2.5, 12, 12);
             glPopMatrix();
         }
-
         glTranslatef(0, 0, -height/(2*leafRows));
-
     }
     glPopMatrix();
 

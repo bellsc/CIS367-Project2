@@ -18,16 +18,12 @@ UnitCube::~UnitCube() {
         glDeleteBuffers(1, &normal_buffer);
 }
 
-void UnitCube::build(int stacks, int slices, glm::vec3 color, short variation) {
+void UnitCube::build(int stacks, int slices, glm::vec3 color) {
 
     glGenBuffers(1, &vertex_buffer);
     glGenBuffers(1, &index_buffer);
     glGenBuffers(1, &color_buffer);
     glGenBuffers(1, &normal_buffer);
-
-    //Set up light and dark color variations
-    srand (time(NULL));
-
 
     //Make function to create 1 face.  Put 6 faces together.
     stcks = stacks;
@@ -36,10 +32,8 @@ void UnitCube::build(int stacks, int slices, glm::vec3 color, short variation) {
     float x, y, z;
     x = y = z = SIDE_LENGTH / 2;
 
-
     y = -y;
     for(float i = 0; i < stcks+1;i++){
-
         for(float j = 0; j < slces+1; j++){
 
             vec3 vertex{x, y, z};
@@ -52,7 +46,7 @@ void UnitCube::build(int stacks, int slices, glm::vec3 color, short variation) {
         z -=  1/(stcks) ;
     }
 
-
+    //Indices
     for(int i = 0; i < stcks;i++){
         for(int j = 0; j < slces+1; j++){
             int temp1 = j+i*(slces+1);
@@ -139,7 +133,6 @@ void UnitCube::build(int stacks, int slices, glm::vec3 color, short variation) {
 
 void UnitCube::render(bool outline) const {
 
-
     glPushMatrix();
 
     renderFace(outline);
@@ -186,9 +179,9 @@ void UnitCube::renderFace(bool outline) const{
 
 
     int n = 0;
-for(int i = 0; i < stcks; i++) {
-    glDrawElements(GL_QUAD_STRIP, 2 * (slces+1), GL_UNSIGNED_SHORT,(void *) (sizeof(GLushort) * (n)));
-    n += 2 * (slces+1);
+    for(int i = 0; i < stcks; i++) {
+        glDrawElements(GL_QUAD_STRIP, 2 * (slces+1), GL_UNSIGNED_SHORT,(void *) (sizeof(GLushort) * (n)));
+        n += 2 * (slces+1);
 }
 
     /* unbind the buffers */

@@ -6,23 +6,14 @@
 
 using glm::vec3;
 
-Propeller::~Propeller() {
-
-}
-
 void Propeller::build(int numBlades, float bladeLength, glm::vec3 color) {
     blades = numBlades;
     bladeLen = bladeLength;
-    blade.build(4,4,color, 1);
-
+    blade.build(4,4,color);
     rotor =  gluNewQuadric();
 }
 
 void Propeller::render(bool outline) const {
-    static float RUBBER_AMBIENT[] = {0.02, 0.02, 0.02, 1.0};
-    static float RUBBER_DIFFUSE[] = {0.01, 0.01, 0.01, 1.0};
-    static float RUBBER_SPECULAR[] = {0.4, 0.4, 0.4, 1.0};
-
     static float CHROME_AMBIENT[] = {0.250000, 0.250000, 0.250000, 1.0};
     static float CHROME_DIFFUSE[] = {0.400000, 0.400000, 0.400000, 1.0};
     static float CHROME_SPECULAR[] = {0.774597, 0.774597, 0.774597, 1.0};
@@ -31,8 +22,6 @@ void Propeller::render(bool outline) const {
     glMaterialfv(GL_FRONT, GL_DIFFUSE, CHROME_DIFFUSE);
     glMaterialfv(GL_FRONT, GL_SPECULAR, CHROME_SPECULAR);
     glMaterialf(GL_FRONT, GL_SHININESS, 76.800003);
-
-    //glEnable(GL_COLOR_MATERIAL);
 
     //Blades
     for(int i = 0; i < blades; i++){
@@ -44,14 +33,10 @@ void Propeller::render(bool outline) const {
         glPopMatrix();
     }
 
-
-    gluQuadricOrientation( rotor, GLU_INSIDE);
     //Center rotor
-
     glPushMatrix();
     glTranslatef(0,0,-.3);
     gluCylinder(rotor, .2, .2, .4, 20, 5);
-
 
     glTranslatef(0, 0, .4);
     glRotatef(180,1,0,0);

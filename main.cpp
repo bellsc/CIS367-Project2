@@ -19,25 +19,22 @@
 #include <glm/gtx/vector_angle.hpp>
 #include <glm/gtx/io.hpp>
 
-
 #include "Shapes/UnitCube.h"
-#include "Helicopter/Propeller.h"
 #include "Helicopter/Helicopter.h"
 #include "Tree.h"
 
 using namespace std;
 void displayCallback(GLFWwindow*);
 
-
 UnitCube ground;
 Helicopter heli;
+Tree tree;
 vector<Tree> treeTypes;
 vector<Tree> treeVec;
 vector<glm::vec3> treeSpacings;
 
-
-glm::mat4 heli_cf;
-glm::mat4 camera_cf, light1_cf, light0_cf, spotlight_cf;
+glm::mat4 heli_cf, tree_cf;
+glm::mat4 camera_cf, light0_cf;
 glm::mat4 *active;
 
 float arc_ball_rad_square;
@@ -45,6 +42,7 @@ int screen_ctr_x, screen_ctr_y;
 
 int propSpeedMode = 0;
 const float PROP_SPEEDS[] = {0, 600, 1000, 1400};
+
 const int NUM_TREES = 36;
 const float TREE_SPACING = 40;
 
@@ -52,10 +50,8 @@ const float GRAVITY = 9.8;   /* m/sec^2 */
 bool is_anim_running = true;
 
 /* light source setting */
-//GLfloat light0_color[] = {1.0, 1.0, 1.0, 1.0};   /* color */
 GLfloat light0_color[] = {.5, .5, .5, 1.0};   /* color */
-
-GLfloat light1_color[] = {1.0, 1.0, .6, 1.0};  /* color */
+GLfloat light1_color[] = {1.5, 1.5, .9, 1.5};  /* color */
 GLfloat black_color[] = {0.0, 0.0, 0.0, 1.0};   /* color */
 
 /*--------------------------------*
@@ -109,20 +105,17 @@ void updateCoordFrames()
             worldLiftVec += gravVec;
 
 
-            if (modelOrigin.z > 0 || (modelOrigin.z == 0 && worldLiftVec.z > 0))
-                heli_cf = glm::translate(glm::vec3{4*worldLiftVec.x, 4*worldLiftVec.y, worldLiftVec.z} * delta) * heli_cf;
-
-
+            if (modelOrigin.z > 0 || (modelOrigin.z == 0 && worldLiftVec.z > 0)) {
+            heli_cf = glm::translate(glm::vec3{4 * worldLiftVec.x, 4 * worldLiftVec.y, worldLiftVec.z} * delta) * heli_cf;
+            }
         }
         if (modelOrigin.z < 0) {
             heli_cf *= glm::translate(glm::vec3{0, 0, -modelOrigin.z});
          }
 
-
         //Helicopter propellers
         heli.mainProp_cf *= glm::rotate(glm::radians(prop_angle), glm::vec3{0.0f, 0.0f, 1.0f});
         heli.tailProp_cf *= glm::rotate(glm::radians(prop_angle), glm::vec3{0.0f, 0.0f, 1.0f});
-
 
     }
     last_timestamp = current;
@@ -157,7 +150,7 @@ void myGLInit ()
     glLightfv (GL_LIGHT1, GL_AMBIENT, light1_color);
     glLightfv (GL_LIGHT1, GL_DIFFUSE, light1_color);
     glLightfv (GL_LIGHT1, GL_SPECULAR, light1_color);
-    glLightf (GL_LIGHT1, GL_SPOT_CUTOFF, 45);
+    glLightf (GL_LIGHT1, GL_SPOT_CUTOFF, 36);
 
 
     glEnableClientState(GL_VERTEX_ARRAY);
@@ -173,34 +166,17 @@ void displayCallback (GLFWwindow *win)
 
     glLoadMatrixf(glm::value_ptr(camera_cf));
 
-    glBegin (GL_LINES);
-    glColor3ub (255, 0, 0);
-    glVertex3i (0, 0, 0);
-    glVertex3i (2, 0, 0);
-    glColor3ub (0, 255, 0);
-    glVertex3i (0, 0, 0);
-    glVertex3i (0, 2, 0);
-    glColor3ub (0, 0, 255);
-    glVertex3i (0, 0, 0);
-    glVertex3i (0, 0, 2);
-    glEnd();
-
-
-
     /* place the light source in the scene. */
     glLightfv (GL_LIGHT0, GL_POSITION, glm::value_ptr(glm::column(light0_cf, 3)));
 
-    /* the curly bracket pairs below are only for readability */
     glPushMatrix();
-    {
-        glMultMatrixf(glm::value_ptr(light0_cf));
-
-        /* Render light-0 as an emmisive object */
-        if (glIsEnabled(GL_LIGHT0))
-            glMaterialfv(GL_FRONT, GL_EMISSION, light0_color);
-        gluSphere(gluNewQuadric(), 3, 20, 20);
-        glMaterialfv(GL_FRONT, GL_EMISSION, black_color);
-    }
+    glMultMatrixf(glm::value_ptr(light0_cf));
+    glDisable(GL_COLOR_MATERIAL);
+    /* Render light-0 as an emmisive object */
+    if (glIsEnabled(GL_LIGHT0))
+        glMaterialfv(GL_FRONT, GL_EMISSION, light0_color);
+    gluSphere(gluNewQuadric(), 3, 20, 20);
+    glMaterialfv(GL_FRONT, GL_EMISSION, black_color);
     glPopMatrix();
 
     //Place trees
@@ -217,12 +193,29 @@ void displayCallback (GLFWwindow *win)
     //Ground
     glPushMatrix();
     glEnable(GL_COLOR_MATERIAL);
+
+    static float GROUND_AMBIENT[] = {0.15, 0.15, 0.15, 1.0};
+    static float GROUND_DIFFUSE[] = {0.4, 0.4, 0.4, 1.0};
+    static float GROUND_SPECULAR[] = {0.15, 0.15, 0.15, 1.0};
+
+    glMaterialfv(GL_FRONT, GL_AMBIENT, GROUND_AMBIENT);
+    glMaterialfv(GL_FRONT, GL_DIFFUSE, GROUND_DIFFUSE);
+    glMaterialfv(GL_FRONT, GL_SPECULAR, GROUND_SPECULAR);
+    glMaterialf(GL_FRONT, GL_SHININESS, 120);
+
     glTranslatef(0,0,-2.3);
     glScalef(300, 300, .5);
     ground.render(false);
     glPopMatrix();
     glDisable(GL_COLOR_MATERIAL);
 
+    //Movable tree
+    glPushMatrix();
+    glMultMatrixf(glm::value_ptr(tree_cf));
+    tree.render(false);
+    glPopMatrix();
+
+    //Helicopter
     glPushMatrix();
     glMultMatrixf(glm::value_ptr(heli_cf));
     heli.render(false);
@@ -234,8 +227,9 @@ void displayCallback (GLFWwindow *win)
 
 void myModelInit ()
 {
-    ground.build(150,150,glm::vec3{0, .15, 0}, 2);
+    ground.build(150,150,glm::vec3{0, .15, 0});
     heli.build(4, 2, glm::vec3{0,.5,.2});
+    tree.build(14, 3);
 
     //Randomly generate 10 trees and spacings
     float avgHeight = 14;
@@ -277,38 +271,76 @@ void myModelInit ()
     active = &camera_cf;
 
     light0_cf = glm::translate(glm::vec3{-100, 8, 50});
+    tree_cf = glm::translate(glm::vec3{15, 0, -2.3});
 
-    light1_cf = glm::translate(glm::vec3{0, -10, 25});
-    light1_cf = light1_cf * glm::rotate (glm::radians(-120.0f), glm::vec3{1,0,0});
+
 }
 
 void keyCallback (GLFWwindow *win, int key, int scan_code, int action, int mods) {
     if (action == GLFW_RELEASE) return; /* ignore key release action */
 
+    // Object control
     if (mods == GLFW_MOD_SHIFT) {
         switch (key) {
-            case GLFW_KEY_UP: /* tilt */
+                break;
+                //Object rotation
+            case GLFW_KEY_Q: /* rotate x */
                 *active *= glm::rotate(glm::radians(-3.0f), glm::vec3{1.0f, 0.0f, 0.0f});
-
                 break;
-            case GLFW_KEY_DOWN: /* tilt */
-                *active *= glm::rotate(glm::radians(+3.0f), glm::vec3{1.0f, 0.0f, 0.0f});
+            case GLFW_KEY_A: /* rotate -x */
+                *active *= glm::rotate(glm::radians(-3.0f), glm::vec3{-1.0f, 0.0f, 0.0f});
                 break;
-            case GLFW_KEY_LEFT: /* pan left */
+            case GLFW_KEY_W: /* rotate y */
                 *active *= glm::rotate(glm::radians(-3.0f), glm::vec3{0.0f, 1.0f, 0.0f});
                 break;
-            case GLFW_KEY_RIGHT: /* pan right */
-                *active *= glm::rotate(glm::radians(+3.0f), glm::vec3{0.0f, 1.0f, 0.0f});
+            case GLFW_KEY_S: /* rotate -y */
+                *active *= glm::rotate(glm::radians(-3.0f), glm::vec3{0.0f, -1.0f, 0.0f});
                 break;
-            case GLFW_KEY_X:
-                *active *= glm::translate(glm::vec3{1, 0, 0});
+            case GLFW_KEY_E: /* rotate z */
+                *active *= glm::rotate(glm::radians(-3.0f), glm::vec3{0.0f, 0.0f, 1.0f});
                 break;
-            case GLFW_KEY_Y:
-                *active *= glm::translate(glm::vec3{0, 1, 0});
+            case GLFW_KEY_D: /* rotate -z */
+                *active *= glm::rotate(glm::radians(-3.0f), glm::vec3{0.0f, 0.0f, -1.0f});
                 break;
-            case GLFW_KEY_Z:
+
+                //Object translation
+            case GLFW_KEY_UP:
                 *active *= glm::translate(glm::vec3{0, 0, 1});
                 break;
+            case GLFW_KEY_DOWN:
+                *active *= glm::translate(glm::vec3{0, 0, -1});
+                break;
+            case GLFW_KEY_LEFT:
+                *active *= glm::translate(glm::vec3{1, 0, 0});
+                break;
+            case GLFW_KEY_RIGHT:
+                *active *= glm::translate(glm::vec3{-1, 0, 0});
+                break;
+            case GLFW_KEY_SLASH:
+                *active *= glm::translate(glm::vec3{0, 1, 0});
+                break;
+            case GLFW_KEY_APOSTROPHE:
+                *active *= glm::translate(glm::vec3{0, -1, 0});
+                break;
+
+
+            //Change active coordinate frame
+            case GLFW_KEY_C:
+                active = &camera_cf;
+                break;
+            case GLFW_KEY_H:
+                active = &heli_cf;
+                break;
+            case GLFW_KEY_T:
+                active = &tree_cf;
+                break;
+            case GLFW_KEY_1:
+                active = &heli.spotlight_cf;
+                break;
+            case GLFW_KEY_0:
+                active = &light0_cf;
+                break;
+
             default:
                 break;
         };
@@ -342,6 +374,7 @@ void keyCallback (GLFWwindow *win, int key, int scan_code, int action, int mods)
                 break;
             case GLFW_KEY_F: /* Faster propeller speed */
                     if(propSpeedMode + 1 < sizeof(PROP_SPEEDS)/4) propSpeedMode++ ;
+                //propSpeed += 10;
                 break;
             case GLFW_KEY_S: /* Slower propeller speed */
                 if(propSpeedMode - 1 > -1) propSpeedMode-- ;
@@ -350,74 +383,84 @@ void keyCallback (GLFWwindow *win, int key, int scan_code, int action, int mods)
         }
     }
 
+
     else {
+        //Camera, enable/disable lights, pause, and quit
         switch (key) {
             case GLFW_KEY_ESCAPE:
                 exit(0);
             case GLFW_KEY_0:
-                active = &light0_cf;
                 if (glIsEnabled(GL_LIGHT0))
                     glDisable(GL_LIGHT0);
                 else
                     glEnable(GL_LIGHT0);
                 break;
             case GLFW_KEY_1:
-                active = &light1_cf;
                 if (glIsEnabled(GL_LIGHT1))
                     glDisable(GL_LIGHT1);
                 else
                     glEnable(GL_LIGHT1);
                 break;
 
-            case GLFW_KEY_SPACE: /* pause the animation */
+                //pause
+            case GLFW_KEY_SPACE:
                 is_anim_running ^= true;
                 break;
 
-            case GLFW_KEY_UP: /* tilt */
-                camera_cf *= glm::translate(glm::vec3{0, 0, -1});
+                //Camera translation
+            case GLFW_KEY_UP:
+                camera_cf = glm::translate(glm::vec3{0, -1, 0}) * camera_cf;
                 break;
-            case GLFW_KEY_DOWN: /* tilt */
-                camera_cf *= glm::translate(glm::vec3{0, 0, 1});
+            case GLFW_KEY_DOWN:
+                camera_cf = glm::translate(glm::vec3{0, 1, 0}) * camera_cf;
                 break;
-            case GLFW_KEY_LEFT: /* pan left */
-                camera_cf *= glm::translate(glm::vec3{-1, 0, 0});
+            case GLFW_KEY_LEFT:
+                camera_cf = glm::translate(glm::vec3{1, 0, 0}) * camera_cf;
                 break;
-            case GLFW_KEY_RIGHT: /* pan right */
-                camera_cf *= glm::translate(glm::vec3{1, 0, 0});
+            case GLFW_KEY_RIGHT:
+                camera_cf = glm::translate(glm::vec3{-1, 0, 0}) * camera_cf;
+                break;
+            case GLFW_KEY_APOSTROPHE:  //forward
+                *active = glm::translate(glm::vec3{0, 0, 1}) * camera_cf;
+                break;
+            case GLFW_KEY_SLASH:  //backward
+                *active = glm::translate(glm::vec3{0, 0, -1}) * camera_cf;
                 break;
 
-
-            case GLFW_KEY_C:
-                active = &camera_cf;
+                //Camera Rotation
+            case GLFW_KEY_Q: /* rotate x */
+                camera_cf = glm::rotate(glm::radians(-3.0f), glm::vec3{1.0f, 0.0f, 0.0f})* camera_cf;
                 break;
-            case GLFW_KEY_F:
-                //active = &frame_cf;
+            case GLFW_KEY_A: /* rotate -x */
+                camera_cf = glm::rotate(glm::radians(-3.0f), glm::vec3{-1.0f, 0.0f, 0.0f})* camera_cf;
                 break;
-            case GLFW_KEY_X:
-                *active *= glm::translate(glm::vec3{-1, 0, 0});
+            case GLFW_KEY_W: /* rotate y */
+                camera_cf = glm::rotate(glm::radians(-3.0f), glm::vec3{0.0f, 1.0f, 0.0f})* camera_cf;
                 break;
-            case GLFW_KEY_Y:
-                *active *= glm::translate(glm::vec3{0, -1, 0});
+            case GLFW_KEY_S: /* rotate -y */
+                camera_cf = glm::rotate(glm::radians(-3.0f), glm::vec3{0.0f, -1.0f, 0.0f})* camera_cf;
                 break;
-            case GLFW_KEY_Z:
-                *active *= glm::translate(glm::vec3{0, 0, -1});
+            case GLFW_KEY_E: /* rotate z */
+                camera_cf = glm::rotate(glm::radians(-3.0f), glm::vec3{0.0f, 0.0f, 1.0f})* camera_cf;
+                break;
+            case GLFW_KEY_D: /* rotate -z */
+                camera_cf = glm::rotate(glm::radians(-3.0f), glm::vec3{0.0f, 0.0f, -1.0f}) * camera_cf;
                 break;
         }
     }
 }
 
-
-
 /*
     The virtual trackball technique implemented here is based on:
     https://www.opengl.org/wiki/Object_Mouse_Trackball
 */
+
 void cursor_handler (GLFWwindow *win, double xpos, double ypos) {
     int state = glfwGetMouseButton(win, GLFW_MOUSE_BUTTON_LEFT);
     static glm::vec3 first_click;
     static glm::mat4 current_cam;
     static bool is_tracking = false;
-//rotate around xz axis
+
     glm::vec3 this_vec;
     if (state == GLFW_PRESS) {
         float x = (xpos - screen_ctr_x);
@@ -458,51 +501,6 @@ void cursor_handler (GLFWwindow *win, double xpos, double ypos) {
 }
 
 
-//OLD ONE
-//void cursor_handler (GLFWwindow *win, double xpos, double ypos) {
-//    int state = glfwGetMouseButton(win, GLFW_MOUSE_BUTTON_LEFT);
-//    static glm::vec3 first_click;
-//    static glm::mat4 current_cam;
-//    static bool is_tracking = false;
-////rotate around xz axis
-//    glm::vec3 this_vec;
-//    if (state == GLFW_PRESS) {
-//        float x = (xpos - screen_ctr_x);
-//        float y = -(ypos - screen_ctr_y);
-//        float hypot_square = x * x + y * y;
-//        float z;
-//
-//        /* determine whether the mouse is on the sphere or on the hyperbolic sheet */
-//        if (2 * hypot_square < arc_ball_rad_square)
-//            z = sqrt(arc_ball_rad_square - hypot_square);
-//        else
-//            z = arc_ball_rad_square / 2.0 / sqrt(hypot_square);
-//        if (!is_tracking) {
-//            /* store the mouse position when the button was pressed for the first time */
-//            first_click = glm::normalize(glm::vec3{x, y, z});
-//            current_cam = camera_cf;
-//            is_tracking = true;
-//        }
-//        else {
-//            /* compute the rotation w.r.t the initial click */
-//            this_vec = glm::normalize(glm::vec3{x, y, z});
-//            /* determine axis of rotation */
-//            glm::vec3 N = glm::cross(first_click, this_vec);
-//
-//            /* determine the angle of rotation */
-//            float theta = glm::angle(first_click, this_vec);
-//
-//            /* create a quaternion of the rotation */
-//            glm::quat q{cos(theta / 2), sin(theta / 2) * N};
-//            /* apply the rotation w.r.t to the current camera CF */
-//            camera_cf = current_cam * glm::toMat4(glm::normalize(q));
-//        }
-//        displayCallback(win);
-//    }
-//    else {
-//        is_tracking = false;
-//    }
-//}
 
 void scroll_handler (GLFWwindow *win, double xscroll, double yscroll) {
     /* translate along the camera Z-axis */

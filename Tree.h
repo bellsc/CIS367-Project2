@@ -14,17 +14,10 @@ using namespace std;
 class Tree{
 
 private:
-
     float height, trunkRad, leafRows;
-
-
     GLUquadric *trunkBase, *trunk, *leafBunch;
 
-    glm::mat4 leaf_cf;
-
-
 public:
-    ~Tree();
     void build(float trunkHeight, int numLeafRows);
     void render(bool) const;
 

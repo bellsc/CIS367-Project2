@@ -7,21 +7,13 @@
 
 using glm::vec3;
 
-Helicopter::~Helicopter() {
 
-}
 
 void Helicopter::build(int mainBlades, int tailBlades, glm::vec3 color) {
 
-//    propBase.build(color, 1);
-//    skid.build(color, 1);
-//    skidConnect.build(color, 1);
-
-    propBase.build(4,4,color, 1);
-    skid.build(4,4,color, 1);
-
-    tailPiece.build(4,4,color,1);
-
+    propBase.build(4,4,color);
+    skid.build(4,4,color);
+    tailPiece.build(4,4,color);
 
     mainProp.build(mainBlades, 8, color);
     tailProp.build(tailBlades, 3, color);
@@ -31,18 +23,14 @@ void Helicopter::build(int mainBlades, int tailBlades, glm::vec3 color) {
     skidConnect = gluNewQuadric();
     spotlight = gluNewQuadric();
 
-
-
     spotlight_cf = glm::translate(glm::vec3{3.1, 0, -1.2});
     spotlight_cf *= glm::rotate (glm::radians(145.0f), glm::vec3{0,1,0});
 
-   // mainProp_cf *= glm::rotate(glm::radians(90.0f), glm::vec3{1,0,0});
 }
 
 void Helicopter::render(bool outline) const {
     glLightfv (GL_LIGHT1, GL_POSITION, glm::value_ptr(glm::column(spotlight_cf, 3)));
     glLightfv(GL_LIGHT1, GL_SPOT_DIRECTION, glm::value_ptr(glm::column(spotlight_cf, 2)));
-
 
     static float CHROME_AMBIENT[] = {0.250000, 0.250000, 0.250000, 1.0};
     static float CHROME_DIFFUSE[] = {0.400000, 0.400000, 0.400000, 1.0};
@@ -52,31 +40,19 @@ void Helicopter::render(bool outline) const {
     static float RUBY_DIFFUSE[] = {0.614240, 0.041360, 0.041360, 1.0};
     static float RUBY_SPECULAR[] = {0.727811, 0.626959, 0.626959, 1.0};
 
-    glBegin (GL_LINES);
-    glColor3ub (255, 0, 0);
-    glVertex3i (0, 0, 0);
-    glVertex3i (5, 0, 0);
-    glColor3ub (0, 255, 0);
-    glVertex3i (0, 0, 0);
-    glVertex3i (0, 5, 0);
-    glColor3ub (0, 0, 255);
-    glVertex3i (0, 0, 0);
-    glVertex3i (0, 0, 5);
-    glEnd();
 
     glMaterialfv(GL_FRONT, GL_AMBIENT, RUBY_AMBIENT);
     glMaterialfv(GL_FRONT, GL_DIFFUSE, RUBY_DIFFUSE);
     glMaterialfv(GL_FRONT, GL_SPECULAR, RUBY_SPECULAR);
     glMaterialf(GL_FRONT, GL_SHININESS, 50);
 
-
-   // glEnable(GL_COLOR_MATERIAL);
-
+    //Body
     glPushMatrix();
     glScalef(4, 1.4, 1.8);
     gluSphere(body,1, 30, 30);
     glPopMatrix();
 
+    //Tail
     glPushMatrix();
     glScalef(1, .6, .8);
     glTranslatef(-2.4,0,.8);
@@ -84,12 +60,10 @@ void Helicopter::render(bool outline) const {
     gluCylinder(tail,.7, .15, 7.5, 30, 30);
     glTranslatef(0,0,7.5);
     glRotatef(180,1, 0, 0);
-   // glScalef(5, 5, 5);
     gluDisk(gluNewQuadric(),0, .16, 8, 8);
     glPopMatrix();
 
-
-
+    //Propeller base
     glPushMatrix();
     glScalef(3.0, 1.3, .5);
     glTranslatef(-.2, 0, 3.2);
@@ -126,9 +100,8 @@ void Helicopter::render(bool outline) const {
     glPopMatrix();
 
 
-    //tail prop
+    //Tail prop
     glPushMatrix();
-
     glTranslatef(-9.5, -.17, .6);
     glScalef(.25, .6, .25);
     glRotatef(90, 1,0,0);
@@ -145,7 +118,6 @@ void Helicopter::render(bool outline) const {
     glTranslatef(3,0,0);
     gluCylinder(skidConnect,.1, .1, 1.2, 30, 30);
     glPopMatrix();
-
 
     glPushMatrix();
     glTranslatef(.4,-1.2,-2.0);
@@ -168,8 +140,6 @@ void Helicopter::render(bool outline) const {
     skid.render(false);
     glPopMatrix();
 
-
-
     //Spotlight
     glPushMatrix();
     glMultMatrixf(glm::value_ptr(spotlight_cf));
@@ -180,6 +150,5 @@ void Helicopter::render(bool outline) const {
     gluQuadricOrientation(spotlight, GLU_OUTSIDE);
 
     glPopMatrix();
-
 }
 
