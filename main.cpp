@@ -1,8 +1,8 @@
 /**
-* Example of 3D object animation
+* Helicopter animation and lighting
 *
-* Hans Dulimarta
-* dulimar@cis.gvsu.edu
+* @author Scott Bell
+* Simulates a helicopter flying with a spotlight.
 */
 #define GLEW_STATIC
 #include <GL/glew.h>
@@ -20,26 +20,24 @@
 #include <glm/gtx/io.hpp>
 
 
-#include "WheelTemp.h"
 #include "Shapes/UnitCube.h"
 #include "Helicopter/Propeller.h"
 #include "Helicopter/Helicopter.h"
-
-
+#include "Tree.h"
 
 using namespace std;
 void displayCallback(GLFWwindow*);
 
-/* define global variables here */
 
 UnitCube ground;
 Helicopter heli;
-GLUquadric *sun;
-UnitCube testcube, test2;
+vector<Tree> treeTypes;
+vector<Tree> treeVec;
+vector<glm::vec3> treeSpacings;
 
 
 glm::mat4 heli_cf;
-glm::mat4 camera_cf, light1_cf, light0_cf;
+glm::mat4 camera_cf, light1_cf, light0_cf, spotlight_cf;
 glm::mat4 *active;
 
 float arc_ball_rad_square;
@@ -47,14 +45,17 @@ int screen_ctr_x, screen_ctr_y;
 
 int propSpeedMode = 0;
 const float PROP_SPEEDS[] = {0, 600, 1000, 1400};
-float currentHeight = 0;
+const int NUM_TREES = 36;
+const float TREE_SPACING = 40;
 
 const float GRAVITY = 9.8;   /* m/sec^2 */
 bool is_anim_running = true;
 
 /* light source setting */
-GLfloat light0_color[] = {1.0, 1.0, 1.0, 1.0};   /* color */
-GLfloat light1_color[] = {1.0, 1.0, 0.6, 1.0};  /* color */
+//GLfloat light0_color[] = {1.0, 1.0, 1.0, 1.0};   /* color */
+GLfloat light0_color[] = {.5, .5, .5, 1.0};   /* color */
+
+GLfloat light1_color[] = {1.0, 1.0, .6, 1.0};  /* color */
 GLfloat black_color[] = {0.0, 0.0, 0.0, 1.0};   /* color */
 
 /*--------------------------------*
@@ -68,7 +69,7 @@ void reshapeCallback (GLFWwindow *win, int w, int h)
     glMatrixMode (GL_PROJECTION);
     glLoadIdentity ();
 
-    gluPerspective (60, (float) w / (float) h, 5.0, 100.0);
+    gluPerspective (60, (float) w / (float) h, 2.0, 500.0);
 
     /* switch back to Model View matrix mode */
     glMatrixMode (GL_MODELVIEW);
@@ -81,28 +82,20 @@ void reshapeCallback (GLFWwindow *win, int w, int h)
 void updateCoordFrames()
 {
     static double last_timestamp = 0;
-    //static float swing_time = 0;
-
     static float prop_angle = 0;
-    //static int deg = 0;
-
     float delta, current;
 
     current = glfwGetTime();
     if (is_anim_running) {
         delta = (current - last_timestamp);
         prop_angle = PROP_SPEEDS[propSpeedMode] * delta;
-//cout << heli_cf << "\n" << endl;
-//propSpeedMode = 1;
-        glm::mat3 heli_cf3(heli_cf);
-        //glm::vec3 modelOrigin = glm::vec3{0,0,0} * heli_cf3;
+
         glm::vec4 modelOrigin = heli_cf * glm::vec4{0, 0, 0, 1};
-   //     cout << modelOrigin << endl;
         if (modelOrigin.z >= 0) {
 
             glm::vec3 gravVec = {0, 0, -GRAVITY};
             float liftForce = 9.8;
-            float multiplier = .298;
+            float multiplier = .598;
             if (modelOrigin.z == 0) {
                 liftForce = PROP_SPEEDS[propSpeedMode] * multiplier;
             }
@@ -110,67 +103,20 @@ void updateCoordFrames()
                 liftForce = PROP_SPEEDS[propSpeedMode] * multiplier / modelOrigin.z;
             }
 
-//            cout << liftForce << endl;
-            //glm::vec3 modelLiftPoint = {0, 0, liftForce};
-            //glm::vec4 modelLiftPoint = {0, 0, liftForce, 1};
-
-            //glm::mat3 heli_cf3(heli_cf);
-            //glm::vec3 modelOrigin = glm::vec3{0,0,0} * heli_cf3;
-            // glm::vec3 modelLiftVec = modelLiftPoint - modelOrigin;
-            //glm::vec4 modelLiftVec = modelLiftPoint - modelOrigin;
             glm::vec4 modelLiftVec = {0, 0, liftForce, 0};
 
- //           cout << " model " << modelLiftVec << endl;
-//            cout << heli_cf3 << endl;
-            //glm::vec3 worldLiftVec4 = modelLiftVec * heli_cf3;
             glm::vec3 worldLiftVec = glm::vec3(heli_cf * modelLiftVec);
-//            cout << " world no grav " << worldLiftVec << endl;
             worldLiftVec += gravVec;
 
-//            cout << "" << endl;
-         //   cout << " world " << worldLiftVec << endl;
-
-            //currentHeight += worldLiftVec4.z * delta;
-            //  cout << " change in current height " << worldLiftVec4.z * delta << endl;
 
             if (modelOrigin.z > 0 || (modelOrigin.z == 0 && worldLiftVec.z > 0))
-                heli_cf = glm::translate(worldLiftVec * delta) * heli_cf;
-                //heli_cf *= glm::translate(worldLiftVec * delta);
-            // heli_cf *= glm::translate(worldLiftVec4 * glm::vec3{-1,-1,1}* delta);
+                heli_cf = glm::translate(glm::vec3{4*worldLiftVec.x, 4*worldLiftVec.y, worldLiftVec.z} * delta) * heli_cf;
+
 
         }
         if (modelOrigin.z < 0) {
-           // cout << "underground!" << endl;
             heli_cf *= glm::translate(glm::vec3{0, 0, -modelOrigin.z});
          }
-
-        // = glm::translate(glm::vec3{-.5 * heli.currXangle * delta, -.5 * heli.currYangle * delta, 0}) * heli_cf;
-
-        //For helicopter movement, add together the z axis vector of the helicopter model
-        //with the gravity vector (down in the world of course.  Natural movement without
-        //"height modes" or differentiating x and y translation.
-
-        //Move up if propeller speed can push up.
-        /*
-        if (currentHeight <= PROP_SPEEDS[propSpeedMode] / 25) {
-            float liftSpeed = PROP_SPEEDS[propSpeedMode] - currentHeight;
-            currentHeight += liftSpeed/100 * delta;
-            heli_cf = glm::translate(glm::vec3{0, 0, liftSpeed/100 * delta}) * heli_cf;
-        }
-
-        //Move down if propeller speed can't preserve the current height.
-        else if (currentHeight > PROP_SPEEDS[propSpeedMode] / 25) {
-            float liftSpeed =  currentHeight - PROP_SPEEDS[propSpeedMode];
-            currentHeight += liftSpeed/100 * delta;
-            heli_cf = glm::translate(glm::vec3{0, 0, liftSpeed/100 * delta}) * heli_cf;
-            /*
-            if(propSpeedMode == 0 && liftSpeed/100 * delta > currentHeight){
-                heli_cf = glm::translate(glm::vec3{0, 0, -currentHeight}) * heli_cf;
-                currentHeight = 0;
-            }
-            */
-
-
 
 
         //Helicopter propellers
@@ -178,14 +124,6 @@ void updateCoordFrames()
         heli.tailProp_cf *= glm::rotate(glm::radians(prop_angle), glm::vec3{0.0f, 0.0f, 1.0f});
 
 
-        /* use the pendulum equation to calculate its angle */
-       // swing_time += delta * 3;
-        /*
-        float angle = INIT_SWING_ANGLE *
-                cos(swing_time * sqrt(GRAVITY / swingarm->length()));
-        swing_arm_cf *= glm::rotate(glm::radians(angle - swing_angle), glm::vec3{0.0f, 1.0f, 0.0f});
-        swing_angle = angle;
-        */
     }
     last_timestamp = current;
 }
@@ -219,7 +157,8 @@ void myGLInit ()
     glLightfv (GL_LIGHT1, GL_AMBIENT, light1_color);
     glLightfv (GL_LIGHT1, GL_DIFFUSE, light1_color);
     glLightfv (GL_LIGHT1, GL_SPECULAR, light1_color);
-    glLightf (GL_LIGHT1, GL_SPOT_CUTOFF, 40);
+    glLightf (GL_LIGHT1, GL_SPOT_CUTOFF, 45);
+
 
     glEnableClientState(GL_VERTEX_ARRAY);
 }
@@ -247,43 +186,9 @@ void displayCallback (GLFWwindow *win)
     glEnd();
 
 
-    /* Specify the reflectance property of the ground using glColor
-       (instead of glMaterial....)
-     */
-
-
-
-    glEnable (GL_COLOR_MATERIAL);
-    glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
-    glColor3ub (29, 100, 56);
-
-//glPushMatrix();
-//    glBegin (GL_QUADS);
-//    glTranslatef(0,0,-1);
-//    const int GROUND_SIZE = 200;
-//    glNormal3f (0.0f, 0.0f, 1.0f); /* normal vector for the ground */
-//    glVertex2i (GROUND_SIZE, GROUND_SIZE);
-//    glNormal3f (0.0f, 0.0f, 1.0f); /* normal vector for the ground */
-//    glVertex2i (-GROUND_SIZE, GROUND_SIZE);
-//    glNormal3f (0.0f, 0.0f, 1.0f); /* normal vector for the ground */
-//    glVertex2i (-GROUND_SIZE, -GROUND_SIZE);
-//    glNormal3f (0.0f, 0.0f, 1.0f); /* normal vector for the ground */
-//    glVertex2i (GROUND_SIZE, -GROUND_SIZE);
-//    glEnd();
-//    glPopMatrix();
-
-   glDisable (GL_COLOR_MATERIAL);
-
-
 
     /* place the light source in the scene. */
     glLightfv (GL_LIGHT0, GL_POSITION, glm::value_ptr(glm::column(light0_cf, 3)));
-
-    /* recall that the last column of a CF is the origin of the CF */
-    glLightfv (GL_LIGHT1, GL_POSITION, glm::value_ptr(glm::column(light1_cf, 3)));
-
-    /* we use the Z-axis of the light CF as the spotlight direction */
-    glLightfv(GL_LIGHT1, GL_SPOT_DIRECTION, glm::value_ptr(glm::column(light1_cf, 2)));
 
     /* the curly bracket pairs below are only for readability */
     glPushMatrix();
@@ -293,88 +198,85 @@ void displayCallback (GLFWwindow *win)
         /* Render light-0 as an emmisive object */
         if (glIsEnabled(GL_LIGHT0))
             glMaterialfv(GL_FRONT, GL_EMISSION, light0_color);
-        //sphere.render();
+        gluSphere(gluNewQuadric(), 3, 20, 20);
         glMaterialfv(GL_FRONT, GL_EMISSION, black_color);
     }
     glPopMatrix();
 
-
-
-
-    /* render the spot light using its coordinate frame */
+    //Place trees
     glPushMatrix();
-    glMultMatrixf(glm::value_ptr(light1_cf));
-   // spot->render();
+    for(int i = 0; i < NUM_TREES; i++) {
+        glPushMatrix();
+        glm::vec3 trans = treeSpacings[i];
+        glTranslatef(trans.x, trans.y, trans.z);
+        treeVec[i].render(false);
+        glPopMatrix();
+    }
     glPopMatrix();
 
     //Ground
     glPushMatrix();
-    static float PEWTER_AMBIENT[] = {0.105882, 0.058824, 0.113725, 1.0};
-    static float PEWTER_DIFFUSE[] = {0.427451, 0.470588, 0.541176, 1.0};
-    static float PEWTER_SPECULAR[] = {0.333333, 0.333333, 0.521569, 1.0};
-
-    glMaterialfv(GL_FRONT, GL_AMBIENT, PEWTER_AMBIENT);
-    glMaterialfv(GL_FRONT, GL_DIFFUSE, PEWTER_DIFFUSE);
-    glMaterialfv(GL_FRONT, GL_SPECULAR, PEWTER_SPECULAR);
-    glMaterialf(GL_FRONT, GL_SHININESS, 50);
-
-
-    glPushMatrix();
-    glTranslatef(0, 0, 15);
-    testcube.render(false);
-    glPopMatrix();
-
-    glPushMatrix();
-    glTranslatef(3, 0, 15);
-    test2.render(false);
-    glPopMatrix();
-
+    glEnable(GL_COLOR_MATERIAL);
     glTranslatef(0,0,-2.3);
-    glScalef(100, 100, .5);
+    glScalef(300, 300, .5);
     ground.render(false);
     glPopMatrix();
+    glDisable(GL_COLOR_MATERIAL);
 
     glPushMatrix();
-    // glTranslatef(1, 1, 10);
-    glMultMatrixf(glm::value_ptr(light1_cf));
-    gluSphere(sun,.2, 30, 30);
-    glPopMatrix();
-
-
-    glPushMatrix();
-    //glTranslatef(0,0,10);
     glMultMatrixf(glm::value_ptr(heli_cf));
     heli.render(false);
     glPopMatrix();
 
-    /* The following nesting of push-pop pairs create an easy
-     * way to render different object w.r.t other coordinate
-     * frame.
-     *
-     * The swingarm is rendered w.r.t the swing base frame
-     * The wheel is rendered w.r.t the swing arm frame
-     */
-
-    glPopMatrix();
     /* to make smooth transition between frame */
     glfwSwapBuffers(win);
 }
 
 void myModelInit ()
 {
-    ground.build(10,10,glm::vec3{.7, .7, .7}, 2);
+    ground.build(150,150,glm::vec3{0, .15, 0}, 2);
     heli.build(4, 2, glm::vec3{0,.5,.2});
 
+    //Randomly generate 10 trees and spacings
+    float avgHeight = 14;
+    float variation = 8;
 
-    sun = gluNewQuadric();
+    for(int i = 0; i < 10; i++){
+        Tree tree;
+        treeTypes.push_back(tree);
+        float height = avgHeight-variation/2.0f + rand() % (int)variation;
+        int leafRows = 3 + rand() % 2;
+        treeTypes[i].build(height, leafRows);
 
-    testcube.build(3,9,glm::vec3{1, 0, 0}, 1);
-    test2.build(1,1,glm::vec3{1, 0, 0}, 1);
+    }
+
+    //make array of trees and generate array of spacings
+    float rootTreeNum = sqrt(NUM_TREES);
+    float startPos = rootTreeNum * TREE_SPACING/2;
+
+    float startX = startPos;
+    float startY = startPos;
+    for(int i = 0; i < rootTreeNum; i++){
+        for(int j = 0; j < rootTreeNum; j++){
+            int randTree = rand() % 10;
+            treeVec.push_back(treeTypes[randTree]);
+            float spaceX = startX + (rand()%(int)(TREE_SPACING))*.7;
+            float spaceY = startY + (rand()%(int)(TREE_SPACING))*.7;
+
+            glm::vec3 vec{spaceX, spaceY,-2.3};
+            cout << spaceX << " " << spaceY << endl;
+            treeSpacings.push_back(vec);
+
+            startY -= TREE_SPACING;
+        }
+        startY = startPos;
+        startX -= TREE_SPACING;
+
+    }
 
     active = &camera_cf;
 
-
-    light0_cf = glm::translate(glm::vec3{-25, 8, 26});
+    light0_cf = glm::translate(glm::vec3{-100, 8, 50});
 
     light1_cf = glm::translate(glm::vec3{0, -10, 25});
     light1_cf = light1_cf * glm::rotate (glm::radians(-120.0f), glm::vec3{1,0,0});
@@ -415,57 +317,36 @@ void keyCallback (GLFWwindow *win, int key, int scan_code, int action, int mods)
         //Helicopter rotation control
     else if(mods == GLFW_MOD_CONTROL) {
         switch (key) {
-            case GLFW_KEY_UP: /* tilt */
-                if(heli.currXangle > heli.MIN_X_ANGLE) {
+            case GLFW_KEY_UP: /* tilt forward */
+                heli_cf *= glm::rotate(glm::radians(3.0f), glm::vec3{0.0f, 1.0f, 0.0f});
 
-                    heli.currXangle -= 3;
-                    heli_cf *= glm::rotate(glm::radians(3.0f), glm::vec3{0.0f, 1.0f, 0.0f});
-                   // cout << heli.currXangle << endl;
-                   // cout << heli_cf << endl;
-                }
                 break;
-            case GLFW_KEY_DOWN: /* tilt */
-                if(heli.currXangle < heli.MAX_X_ANGLE) {
-                    heli.currXangle += 3;
-                    heli_cf *= glm::rotate(glm::radians(-3.0f), glm::vec3{0.0f, 1.0f, 0.0f});
+            case GLFW_KEY_DOWN: /* tilt  backward*/
+                heli_cf *= glm::rotate(glm::radians(-3.0f), glm::vec3{0.0f, 1.0f, 0.0f});
 
-                }
                 break;
-            case GLFW_KEY_LEFT: /* pan left */
-                if(heli.currYangle > heli.MIN_Y_ANGLE) {
-                    heli.currYangle -= 3;
-                    heli_cf *= glm::rotate(glm::radians(-3.0f), glm::vec3{1.0f, 0.0f, 0.0f});
-                    cout << heli.currYangle << endl;
+            case GLFW_KEY_LEFT: /* tilt left */
+                heli_cf *= glm::rotate(glm::radians(-3.0f), glm::vec3{1.0f, 0.0f, 0.0f});
 
-                }
+
                 break;
-            case GLFW_KEY_RIGHT: /* pan right */
-                if(heli.currYangle < heli.MAX_Y_ANGLE) {
-                    heli.currYangle += 3;
-                    heli_cf *= glm::rotate(glm::radians(+3.0f), glm::vec3{1.0f, 0.0f, 0.0f});
-                }
+            case GLFW_KEY_RIGHT: /* tilt right */
+                heli_cf *= glm::rotate(glm::radians(+3.0f), glm::vec3{1.0f, 0.0f, 0.0f});
+
                 break;
-            case GLFW_KEY_SLASH: /* pan right */
+            case GLFW_KEY_SLASH: /* rotate left */
+                heli_cf *= glm::rotate(glm::radians(3.0f), glm::vec3{0.0f, 0.0f, 1.0f});
+                break;
+            case GLFW_KEY_APOSTROPHE: /* rotate right */
                 heli_cf *= glm::rotate(glm::radians(-3.0f), glm::vec3{0.0f, 0.0f, 1.0f});
                 break;
-            case GLFW_KEY_APOSTROPHE: /* pan right */
-                heli_cf *= glm::rotate(glm::radians(+3.0f), glm::vec3{0.0f, 0.0f, 1.0f});
-                break;
             case GLFW_KEY_F: /* Faster propeller speed */
-                cout << sizeof(PROP_SPEEDS)/4 << endl;
                     if(propSpeedMode + 1 < sizeof(PROP_SPEEDS)/4) propSpeedMode++ ;
                 break;
             case GLFW_KEY_S: /* Slower propeller speed */
                 if(propSpeedMode - 1 > -1) propSpeedMode-- ;
                 break;
 
-//            case GLFW_KEY_R: /* Reset propeller angle */
-//
-//                heli_cf *= glm::rotate(glm::radians((1.0f * heli.currXangle)), glm::vec3{1.0f, 0.0f, 0.0f});
-//                heli_cf *= glm::rotate(glm::radians((1.0f * heli.currYangle)), glm::vec3{0.0f, 1.0f, 0.0f});
-//                heli.currXangle = 0;
-//                heli.currYangle = 0;
-//                break;
         }
     }
 
@@ -632,14 +513,12 @@ void scroll_handler (GLFWwindow *win, double xscroll, double yscroll) {
 }
 
 
-
-
 int main (int argc, char **argv)
 {
 
     glfwInit();
     GLFWwindow *win;
-    win = glfwCreateWindow(100, 50, "Animation", NULL, NULL);
+    win = glfwCreateWindow(100, 50, "Helicopter", NULL, NULL);
 
     glfwMakeContextCurrent(win);
     GLenum err = glewInit();
@@ -669,5 +548,4 @@ int main (int argc, char **argv)
     }
     glfwDestroyWindow(win);
     glfwTerminate();
-
 }

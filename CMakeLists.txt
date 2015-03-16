@@ -25,7 +25,7 @@ if (APPLE)
   find_library(COREVID_LIBRARY CoreVideo REQUIRED)
 endif (APPLE)
 
-set(SOURCE_FILES main.cpp WheelTemp.cpp Shapes/Ring.cpp Shapes/TruncCone.cpp Shapes/UnitCube.cpp
+set(SOURCE_FILES main.cpp Shapes/UnitCube.cpp Tree.cpp
  Helicopter/Propeller.cpp Helicopter/Helicopter.cpp)
 add_executable(Proj2 ${SOURCE_FILES})
 

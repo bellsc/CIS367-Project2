@@ -38,7 +38,6 @@ void UnitCube::build(int stacks, int slices, glm::vec3 color, short variation) {
 
 
     y = -y;
-    cout << "stacks: " << stcks << ", slices: " << slces << endl;
     for(float i = 0; i < stcks+1;i++){
 
         for(float j = 0; j < slces+1; j++){
@@ -64,21 +63,14 @@ void UnitCube::build(int stacks, int slices, glm::vec3 color, short variation) {
         }
     }
 
-cout << all_normals.size() << endl;
     //Normals
     for(int i = 1; i < slces; i++){
         all_normals[i] = glm::normalize(vec3{1, 0, 1});
         all_normals[i+(stcks*(slces+1))]= glm::normalize(vec3{1, 0, -1});
-        cout << i << endl;
-        cout << i+(stcks*(slces+1)) << endl;
-        cout << "" << endl;
     }
     for(int i = 1; i < stcks; i++){
         all_normals[i*(slces+1)] = glm::normalize(vec3{1, -1, 0});
         all_normals[i*(slces+1)+slces] = glm::normalize(vec3{1, 1, 0});
-        cout << i*(slces+1) << endl;
-        cout << i*(slces+1)+slces << endl;
-        cout << "" << endl;
     }
 
     //Corners
@@ -87,80 +79,6 @@ cout << all_normals.size() << endl;
     all_normals[stcks*(slces+1)] = glm::normalize(vec3{1, -1, -1});
     all_normals[(stcks+1)*(slces+1)-1] = glm::normalize(vec3{1, 1, -1});
 
-
-
-
-
-/*
-    for(int i = 0; i < slices+1;i++){
-        for(int j = 0; j < stacks+1; j++){
-            int temp1 = i+j*(slices+1);
-            //int temp2 = i+(j+1)*(slices+1);
-            all_index.push_back(temp1);
-            //all_index.push_back(temp2);
-
-            cout << temp1 << endl;
-           // cout << temp2 << endl;
-//            all_index.push_back(j+i*(slices));
-//            all_index.push_back(j+(i+1)*(slices));
-        }
-    }
-    */
-
-
-
-/*
-    //bottom
-    all_points.push_back(vec3 {-x, -y, -z});
-    all_points.push_back(vec3 {x, -y, -z});
-    all_points.push_back(vec3 {x, y, -z});
-    all_points.push_back(vec3 {-x, y, -z});
-
-    for (int i = 0; i < 4; i++) {
-        all_index.push_back(i);
-        vec3 darkColor{color.x-(rand()%variation+ C_ADJUST)/100.0, color.y-(rand()%variation+ C_ADJUST)/100.0, color.z-(rand()%variation+ C_ADJUST)/100.0};
-        all_colors.push_back(darkColor);
-    }
-
-    //top
-    all_points.push_back(vec3 {-x, -y, z});
-    all_points.push_back(vec3 {x, -y, z});
-    all_points.push_back(vec3 {x, y, z});
-    all_points.push_back(vec3 {-x, y, z});
-
-    for (int i = 0; i < 4; i++) {
-        all_index.push_back(i+4);
-        vec3 normColor{color.x-variation/200.0+(rand()%variation)/100.0,
-                color.y-variation/200.0-(rand()%variation)/100.0,
-                color.z-variation/200.0-(rand()%variation)/100.0};
-        all_colors.push_back(normColor);
-    }
-
-    //Sides
-    all_index.push_back(7);
-    all_index.push_back(3);
-    all_index.push_back(6);
-    all_index.push_back(2);
-    all_index.push_back(5);
-    all_index.push_back(1);
-    all_index.push_back(4);
-    all_index.push_back(0);
-    all_index.push_back(7);
-    all_index.push_back(3);
-
-
-
-    //Normals
-    all_normals.push_back(glm::normalize(vec3{-1,-1,-1}));
-    all_normals.push_back(glm::normalize(vec3{1,-1,-1}));
-    all_normals.push_back(glm::normalize(vec3{1,1,-1}));
-    all_normals.push_back(glm::normalize(vec3{-1,1,-1}));
-    all_normals.push_back(glm::normalize(vec3{-1,-1,1}));
-    all_normals.push_back(glm::normalize(vec3{1,-1,1}));
-    all_normals.push_back(glm::normalize(vec3{1,1,1}));
-    all_normals.push_back(glm::normalize(vec3{-1,1,1}));
-
-/**/
 
     glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
     glBufferData(GL_ARRAY_BUFFER, all_points.size() * sizeof(float) * 3, NULL, GL_DYNAMIC_DRAW);
@@ -272,19 +190,6 @@ for(int i = 0; i < stcks; i++) {
     glDrawElements(GL_QUAD_STRIP, 2 * (slces+1), GL_UNSIGNED_SHORT,(void *) (sizeof(GLushort) * (n)));
     n += 2 * (slces+1);
 }
-
-
-/*
-    glFrontFace(GL_CW);
-    glDrawRangeElements(GL_QUADS, 0,0, 4, GL_UNSIGNED_SHORT, 0);
-
-    glFrontFace(GL_CCW);
-    glDrawRangeElements(GL_QUADS, 0, 0, 4, GL_UNSIGNED_SHORT,
-            (void *) (sizeof(GLushort) * (4)));
-    glFrontFace(GL_CW);
-
-    glDrawRangeElements(GL_QUAD_STRIP, 0, 0, 10, GL_UNSIGNED_SHORT,
-            (void *) (sizeof(GLushort) * (8)));
 
     /* unbind the buffers */
     glBindBuffer(GL_ARRAY_BUFFER, 0);

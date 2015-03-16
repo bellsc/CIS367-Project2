@@ -2,6 +2,7 @@
 #include <cmath>
 #include <glm/gtx/transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <glm/gtc/matrix_access.hpp>
 #include "Helicopter.h"
 
 using glm::vec3;
@@ -28,14 +29,20 @@ void Helicopter::build(int mainBlades, int tailBlades, glm::vec3 color) {
     body =  gluNewQuadric();
     tail = gluNewQuadric();
     skidConnect = gluNewQuadric();
+    spotlight = gluNewQuadric();
+
+
+
+    spotlight_cf = glm::translate(glm::vec3{3.1, 0, -1.2});
+    spotlight_cf *= glm::rotate (glm::radians(145.0f), glm::vec3{0,1,0});
 
    // mainProp_cf *= glm::rotate(glm::radians(90.0f), glm::vec3{1,0,0});
 }
 
 void Helicopter::render(bool outline) const {
-    static float RUBBER_AMBIENT[] = {0.02, 0.02, 0.02, 1.0};
-    static float RUBBER_DIFFUSE[] = {0.01, 0.01, 0.01, 1.0};
-    static float RUBBER_SPECULAR[] = {0.4, 0.4, 0.4, 1.0};
+    glLightfv (GL_LIGHT1, GL_POSITION, glm::value_ptr(glm::column(spotlight_cf, 3)));
+    glLightfv(GL_LIGHT1, GL_SPOT_DIRECTION, glm::value_ptr(glm::column(spotlight_cf, 2)));
+
 
     static float CHROME_AMBIENT[] = {0.250000, 0.250000, 0.250000, 1.0};
     static float CHROME_DIFFUSE[] = {0.400000, 0.400000, 0.400000, 1.0};
@@ -129,9 +136,6 @@ void Helicopter::render(bool outline) const {
     tailProp.render(false);
     glPopMatrix();
 
-
-
-
     //Skids
     gluQuadricOrientation( skidConnect, GLU_INSIDE);
     glPushMatrix();
@@ -162,6 +166,19 @@ void Helicopter::render(bool outline) const {
     glTranslatef(.4,1.2,-2.0);
     glScalef(5.2,.25,.1);
     skid.render(false);
+    glPopMatrix();
+
+
+
+    //Spotlight
+    glPushMatrix();
+    glMultMatrixf(glm::value_ptr(spotlight_cf));
+    gluSphere(spotlight, .148, 10, 10);
+    gluCylinder(spotlight,.15, .3, .3, 16, 16);
+    gluQuadricOrientation(spotlight, GLU_INSIDE);
+    gluCylinder(spotlight,.149, .299, .3, 16, 16);
+    gluQuadricOrientation(spotlight, GLU_OUTSIDE);
+
     glPopMatrix();
 
 }
